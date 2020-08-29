@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import requests
 import logging
@@ -783,32 +784,47 @@ def delete_subscription(config, subscription_type=None, subscription_key=None):
 
     return(ret)
 
+
 def get_subscription(config, subscription_type=None, subscription_key=None):
     userId = config['user']
     password = config['pass']
     base_url = config['url']
 
-    ret = {}
-
-    base_url = re.sub("/$", "", base_url)
-    url = '/'.join([base_url, "subscriptions"])
+    url = os.path.join(base_url, 'subscriptions')
     set_account_header(config)
 
-    if subscription_key or subscription_type:
-        url = url + "?"
-        if subscription_key:
-            url = url + "subscription_key="+subscription_key+"&"
-        if subscription_type:
-            url = url + "subscription_type="+subscription_type+"&"
+    query = {}
+    if subscription_key:
+        query['subscription_key'] = subscription_key
+    if subscription_type:
+        query['subscription_type'] = subscription_type
 
-    try:
-        _logger.debug("GET url=%s", str(url))
-        r = requests.get(url, auth=(userId, password), verify=config['ssl_verify'], headers=header_overrides)
-        ret = anchorecli.clients.common.make_client_result(r, raw=False)
-    except Exception as err:
-        raise err
+    _logger.debug("GET url=%s", str(url))
+    r = requests.get(url, auth=(userId, password), verify=config['ssl_verify'], headers=header_overrides, params=query)
+    return anchorecli.clients.common.make_client_result(r, raw=False)
 
-    return(ret)
+
+def get_subscription_by_id(config, subscription_id):
+    user_id = config['user']
+    password = config['pass']
+    base_url = config['url']
+
+    url = os.path.join(base_url, 'subscriptions', subscription_id)
+    _logger.debug("GET url=%s", str(url))
+    r = requests.get(url, auth=(user_id, password), verify=config['ssl_verify'], headers=header_overrides)
+    return anchorecli.clients.common.make_client_result(r, raw=False)
+
+
+def delete_subscription_by_id(config, subscription_id):
+    user_id = config['user']
+    password = config['pass']
+    base_url = config['url']
+
+    url = os.path.join(base_url, 'subscriptions', subscription_id)
+    _logger.debug("DELETE url=%s", str(url))
+    r = requests.delete(url, auth=(user_id, password), verify=config['ssl_verify'], headers=header_overrides)
+    return anchorecli.clients.common.make_client_result(r, raw=False)
+
 
 def get_subscription_types(config):
     userId = config['user']
@@ -831,6 +847,7 @@ def get_subscription_types(config):
     return(ret)
 
 # repo clients
+
 
 def add_repo(config, input_repo, autosubscribe=False, lookuptag=None):
     userId = config['user']

@@ -82,14 +82,16 @@ def deactivate(subscription_type, subscription_key):
 
     anchorecli.cli.utils.doexit(ecode)
 
+
 @subscription.command(name='list', short_help="List all current subscriptions")
-def subscriptionlist():
+@click.option('--full', is_flag=True, help="Print additional details about the subscriptions as they're being listed")
+def list_subscriptions(full):
     ecode = 0
     try:
         ret = anchorecli.clients.apiexternal.get_subscription(config)
         ecode = anchorecli.cli.utils.get_ecode(ret)
         if ret['success']:
-            print(anchorecli.cli.utils.format_output(config, 'subscription_list', {}, ret['payload']))
+            print(anchorecli.cli.utils.format_output(config, 'subscription_list', {'full': full}, ret['payload']))
         else:
             raise Exception( json.dumps(ret['error'], indent=4))
 
@@ -100,3 +102,40 @@ def subscriptionlist():
 
     anchorecli.cli.utils.doexit(ecode)
 
+
+@subscription.command(name='get', short_help="Get details about a particular subscription")
+@click.argument('subscription_id', nargs=1, required=True)
+def get_subscription_by_id(subscription_id):
+    return_code = 0
+    try:
+        ret = anchorecli.clients.apiexternal.get_subscription_by_id(config, subscription_id)
+        return_code = anchorecli.cli.utils.get_ecode(ret)
+        if ret['success']:
+            print(anchorecli.cli.utils.format_output(config, 'subscription_get', {'full': True}, ret['payload']))
+        else:
+            raise Exception(json.dumps(ret['error'], indent=4))
+    except Exception as err:
+        print(anchorecli.cli.utils.format_error_output(config, 'subscription_get', {}, err))
+        if not return_code:
+            return_code = 2
+
+    anchorecli.cli.utils.doexit(return_code)
+
+
+@subscription.command(name='del', short_help="Delete a subscription by ID (must be already deactivated)")
+@click.argument('subscription_id', nargs=1, required=True)
+def delete_subscription_by_id(subscription_id):
+    return_code = 0
+    try:
+        ret = anchorecli.clients.apiexternal.delete_subscription_by_id(config, subscription_id)
+        return_code = anchorecli.cli.utils.get_ecode(ret)
+        if ret['success']:
+            print('Success')
+        else:
+            raise Exception(json.dumps(ret['error'], indent=4))
+    except Exception as err:
+        print(anchorecli.cli.utils.format_error_output(config, 'subscription_delete', {}, err))
+        if not return_code:
+            return_code = 2
+
+    anchorecli.cli.utils.doexit(return_code)
